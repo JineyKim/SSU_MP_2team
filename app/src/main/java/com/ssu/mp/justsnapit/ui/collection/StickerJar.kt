@@ -19,15 +19,18 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-// 수집함에 스티커를 표시하고 낙하, 드래그 및 클릭 동작을 처리합니다.
+// 수집함에 스티커를 표시하고 낙하, 드래그 및 클릭 동작을 처리
 internal fun StickerJar(stickers: List<Sticker>, onSelect: (Sticker) -> Unit) {
+    val currentOnSelect by rememberUpdatedState(onSelect)
     var bounds by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
     val size = with(density) { 112.dp.toPx() }
-    // 스티커를 좌표에 따라 자유롭게 배치하고 영역 크기를 낙하·드래그 경계 계산에 사용합니다.
+    // 스티커를 좌표에 따라 자유롭게 배치하고 영역 크기를 낙하·드래그 경계 계산에 사용
     Box(Modifier.fillMaxSize().onSizeChanged { bounds = it }) {
         stickers.forEachIndexed { index, sticker ->
             key(sticker.id) {
+                // 터치 시 메모가 반영된 최신 스티커 정보 참조
+                val currentSticker by rememberUpdatedState(sticker)
                 val body = remember { StickerPhysics() }
                 LaunchedEffect(bounds) {
                     if (bounds.width == 0) return@LaunchedEffect
@@ -48,7 +51,7 @@ internal fun StickerJar(stickers: List<Sticker>, onSelect: (Sticker) -> Unit) {
                 }
                 Image(sticker.bitmap.asImageBitmap(), sticker.title,
                     Modifier.size(112.dp).graphicsLayer { translationX = body.x; translationY = body.y; rotationZ = body.angle }
-                        .pointerInput(sticker.id) { detectTapGestures(onTap = { onSelect(sticker) }) }
+                        .pointerInput(sticker.id) { detectTapGestures(onTap = { currentOnSelect(currentSticker) }) }
                         .pointerInput(sticker.id, bounds) {
                             detectDragGestures(onDragStart = { body.startDrag() },
                                 onDragEnd = { body.endDrag() }, onDragCancel = { body.endDrag() }) { change, delta ->

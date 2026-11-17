@@ -11,7 +11,8 @@ Kotlin / Jetpack Compose 기반 사진 스티커 수집 앱 (패키지: `com.ssu
 app/src/main/java/com/ssu/mp/justsnapit/
 ├── SnapApp.kt
 ├── data/
-│   └── StickerStore.kt
+│   ├── StickerStore.kt
+│   └── StickerDatabase.kt
 ├── ui/
 │   ├── camera/
 │   │   └── CameraScreen.kt
@@ -33,6 +34,7 @@ app/src/main/java/com/ssu/mp/justsnapit/
 |---|---|
 | [SnapApp.kt](app/src/main/java/com/ssu/mp/justsnapit/SnapApp.kt) | 앱 상태와 화면 전환, 사진 선택 및 스티커 저장·삭제 흐름을 관리합니다. |
 | [StickerStore.kt](app/src/main/java/com/ssu/mp/justsnapit/data/StickerStore.kt) | 스티커 데이터 저장·조회·삭제와 배경 제거·테두리·지우개 처리를 담당합니다. |
+| [StickerDatabase.kt](app/src/main/java/com/ssu/mp/justsnapit/data/StickerDatabase.kt) | Room 테이블과 조회·수정 작업, 데이터베이스 인스턴스를 정의합니다. |
 | [CameraScreen.kt](app/src/main/java/com/ssu/mp/justsnapit/ui/camera/CameraScreen.kt) | 카메라 권한, 미리보기, 촬영 및 전후면 전환을 처리합니다. |
 | [CollectionScreen.kt](app/src/main/java/com/ssu/mp/justsnapit/ui/collection/CollectionScreen.kt) | 수집함 메뉴와 스티커 목록, 격자 보기 및 빈 상태 안내를 표시합니다. |
 | [StickerJar.kt](app/src/main/java/com/ssu/mp/justsnapit/ui/collection/StickerJar.kt) | 스티커를 화면에 배치하고 낙하 애니메이션과 드래그·클릭 입력을 연결합니다. |
@@ -52,10 +54,12 @@ app/src/main/java/com/ssu/mp/justsnapit/
 - 상단 낙하, 바닥/벽 반사, 드래그와 놓기, 클릭 상세 보기
 - 격자 보기, 생성일 확인, 삭제, 앱 재실행 후 로컬 수집 유지
 
-스티커 PNG는 앱 내부 files/stickers 폴더에, 메타데이터는 SharedPreferences에 저장합니다.
+스티커 PNG는 앱 내부 files/stickers 폴더에, 이름·메모·이미지 파일명·생성 및 수정 시각은 Room의 stickers.db에 저장합니다.
+SharedPreferences의 수집함은 최초 접근 때 트랜잭션으로 가져오며, 완료 상태도 데이터베이스에 함께 기록합니다. 설정 파일은 보관하되 완료 후에는 다시 가져오지 않습니다.
+추가·수정·삭제 시 pendingSync를 표시합니다. 삭제한 스티커는 목록에서 숨기고 이미지 파일을 지우며, 삭제 기록은 서버 반영을 위해 남깁니다. 실제 서버 통신과 동기화 처리는 아직 구현하지 않았습니다.
 이미지 파일명은 `SnappedAt20261102053025-UTC-a8f31c92.png` 형식입니다. UTC(협정 세계시) 저장 시각과 8자리 소문자 16진수 난수를 사용하며, 동일한 파일명이나 식별자가 있으면 난수를 다시 생성하여 재시도합니다.
 이 형식의 식별자와 일치하는 파일만 불러옵니다. 파일명과 화면 표시 이름은 별개이며 사용자가 원하는 이름으로 수정할 수 있습니다.
-기본 단계의 작은 수집함을 위한 구조이며, 큰 컬렉션으로 확장할 때 Room과 이미지 캐시로 전환할 수 있습니다.
+이미지는 목록을 불러올 때 디코딩하며, 큰 컬렉션을 위한 이미지 캐시는 후속 범위입니다.
 
 ## 추가 할 사항
 

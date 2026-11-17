@@ -17,16 +17,16 @@ internal class StickerPhysics {
     var dragging = false
         private set
 
-    // 수집함 너비와 목록 순서를 기준으로 스티커의 가로 위치를 정합니다.
+    // 수집함 너비와 목록 순서를 기준으로 스티커의 가로 위치 설정
     fun place(width: Float, size: Float, index: Int) {
         x = (width - size).coerceAtLeast(0f) * ((index * .31f + .38f) % 1f)
     }
 
-    // 바닥에서 충분히 느려진 스티커가 정지 상태인지 확인합니다.
+    // 바닥에서 충분히 느려진 스티커가 정지 상태인지 확인
     fun isResting(height: Float, size: Float): Boolean =
         y >= (height - size).coerceAtLeast(0f) && vy == 0f && abs(vx) < 1f
 
-    // 경과 시간에 따른 중력, 이동, 바닥과 벽의 반사 및 회전을 계산합니다.
+    // 경과 시간에 따른 중력, 이동, 바닥과 벽의 반사 및 회전을 계산
     fun update(dt: Float, width: Float, height: Float, size: Float) {
         if (dragging) return
         vy += 1700f * dt
@@ -46,14 +46,14 @@ internal class StickerPhysics {
         angle = (vx * .025f).coerceIn(-25f, 25f)
     }
 
-    // 드래그를 시작하면서 낙하 계산을 멈추고 이동 속도를 초기화합니다.
+    // 드래그를 시작하면서 낙하 계산을 멈추고 이동 속도를 초기화
     fun startDrag() {
         dragging = true
         vx = 0f
         vy = 0f
     }
 
-    // 손가락 이동량을 영역 안의 위치와 놓은 뒤의 속도에 반영합니다.
+    // 손가락 이동량을 영역 안의 위치와 놓은 뒤의 속도에 반영
     fun dragBy(dx: Float, dy: Float, width: Float, height: Float, size: Float) {
         x = (x + dx).coerceIn(0f, (width - size).coerceAtLeast(0f))
         y = (y + dy).coerceIn(0f, (height - size).coerceAtLeast(0f))
@@ -61,7 +61,7 @@ internal class StickerPhysics {
         vy = (dy * 20).coerceIn(-900f, 900f)
     }
 
-    // 드래그가 끝나면 물리 계산을 다시 진행할 수 있게 합니다.
+    // 드래그가 끝나면 물리 계산을 재개
     fun endDrag() {
         dragging = false
     }

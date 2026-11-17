@@ -16,9 +16,9 @@ import com.ssu.mp.justsnapit.ui.theme.Lime
 import com.ssu.mp.justsnapit.ui.theme.Charcoal
 
 @Composable
-// 아이콘과 클릭 동작을 지정할 수 있는 공통 원형 버튼을 표시합니다.
+// 아이콘과 클릭 동작을 지정할 수 있는 공통 원형 버튼을 표시
 fun RoundButton(symbol: String, label: String, size: Int = 44, accent: Boolean = false, onClick: () -> Unit) {
-    // 공통 원형 버튼의 중앙에 아이콘을 놓고 강조 여부에 따라 색상을 지정합니다.
+    // 공통 원형 버튼의 중앙에 아이콘을 놓고 강조 여부에 따라 색상을 지정
     Box(Modifier.size(size.dp).clip(CircleShape).background(if (accent) Lime else Charcoal)
         .border(1.dp, Color.White.copy(alpha = .12f), CircleShape).clickable(onClick = onClick)
         .semantics { contentDescription = label }, contentAlignment = Alignment.Center) {

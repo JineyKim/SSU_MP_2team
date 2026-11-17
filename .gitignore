@@ -23,3 +23,8 @@ local.properties
 google-services.json
 *.hprof
 *.log
+
+# 로컬 작업 규칙 및 초안 문서
+[Aa][Gg][Ee][Nn][Tt].md
+[Aa][Gg][Ee][Nn][Tt][Ss].md
+*초안.md

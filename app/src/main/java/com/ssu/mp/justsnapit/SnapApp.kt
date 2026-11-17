@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-// 앱 상태를 관리하고 카메라, 수집함, 편집 및 상세 화면을 표시합니다.
+// 앱 상태를 관리하고 카메라, 수집함, 편집 및 상세 화면을 표시
 fun SnapApp() {
     val context = LocalContext.current
     val store = remember { StickerStore(context) }
@@ -53,7 +53,7 @@ fun SnapApp() {
         runCatching { store.load() }.onSuccess { stickers = it }.onFailure { error = "수집함을 읽지 못했어요." }
         loaded = true
     }
-    // 사진의 배경을 제거하고 결과를 편집 화면에 전달합니다.
+    // 사진의 배경을 제거하고 결과를 편집 화면에 전달
     fun process(bitmap: Bitmap) {
         scope.launch {
             busy = true
@@ -71,19 +71,19 @@ fun SnapApp() {
             try { process(store.decode(uri)) } catch (e: Exception) { busy = false; error = "사진을 열지 못했어요." }
         }
     }
-    // 처리 중이 아닐 때 시스템 사진 선택 화면을 엽니다.
+    // 처리 중이 아닐 때 시스템 사진 선택 화면 열기
     fun pick() { if (!busy) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
 
     BackHandler(selected != null || editing != null || camera || grid) {
         when { selected != null -> selected = null; editing != null -> { editing = null; original = null }
             grid -> grid = false; else -> camera = false }
     }
-    // 전체 화면의 검정 배경과 연두색 테두리를 그리고, 상세 화면과 로딩 화면을 위에 겹칩니다.
+    // 전체 화면의 검정 배경과 연두색 테두리를 그리고, 상세 화면과 로딩 화면을 위에 겹쳐 표시
     Box(Modifier.fillMaxSize().background(Color.Black).border(3.dp, Lime, RoundedCornerShape(48.dp))) {
-        // 상단 메뉴, 본문, 하단 전환 버튼을 세로로 배치하고 상세 보기가 열리면 배경을 흐리게 합니다.
+        // 상단 메뉴, 본문, 하단 전환 버튼을 세로로 배치하고 상세 보기가 열리면 배경 흐림 처리
         Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).then(if (selected != null) Modifier.blur(20.dp) else Modifier)) {
             if (editing == null) {
-                // 하단 전환 버튼 위의 남은 공간에 현재 선택한 화면을 표시합니다.
+                // 하단 전환 버튼 위의 남은 공간에 현재 선택한 화면을 표시
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (camera) {
                         CameraScreen(onPhoto = ::process, onGallery = ::pick, onError = { error = it })
@@ -99,7 +99,7 @@ fun SnapApp() {
                         )
                     }
                 }
-                // 화면 아래 중앙에 카메라와 수집함 전환 버튼을 나란히 배치합니다.
+                // 화면 아래 중앙에 카메라와 수집함 전환 버튼을 나란히 배치
                 Row(Modifier.align(Alignment.CenterHorizontally).padding(top = 16.dp, bottom = 14.dp)
                     .border(2.dp, Lime, CircleShape).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     ModeButton("▣", "카메라", camera) { camera = true }
@@ -123,11 +123,16 @@ fun SnapApp() {
         selected?.let { item ->
             StickerDetail(
                 sticker = item,
+                onSaveMemo = { memo ->
+                    val updated = store.updateMemo(item.id, memo, stickers)
+                    stickers = updated
+                    selected = updated.first { it.id == item.id }
+                },
                 onClose = { selected = null },
                 onDelete = {
                     scope.launch {
                         try {
-                            store.delete(item, stickers)
+                            store.delete(item)
                             stickers = stickers.filterNot { it.id == item.id }
                             selected = null
                         } catch (e: Exception) {
@@ -137,12 +142,12 @@ fun SnapApp() {
                 }
             )
         }
-        // 처리 중에는 어두운 덮개를 표시하고 아래 화면의 터치 입력을 막습니다.
+        // 처리 중에는 어두운 덮개를 표시하고 아래 화면의 터치 입력 차단
         if (busy || !loaded) Box(Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(enabled = true, onClick = {}), contentAlignment = Alignment.Center) {
-            // 로딩 표시와 대기 안내 문구를 화면 중앙에 세로로 배치합니다.
+            // 로딩 표시와 대기 안내 문구를 화면 중앙에 세로로 배치
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Lime)
-                // 로딩 표시와 안내 문구 사이의 간격입니다.
+                // 로딩 표시와 안내 문구 사이의 간격
                 Spacer(Modifier.height(16.dp))
                 Text("잠시만 기다려주세요…", color = Lime)
             }
