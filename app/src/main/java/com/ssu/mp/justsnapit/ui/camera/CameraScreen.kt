@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-// 카메라 미리보기와 권한 요청, 촬영 및 전후면 전환을 처리합니다.
+// 카메라 미리보기와 권한 요청, 촬영 및 전후면 전환을 처리
 fun CameraScreen(onPhoto: (Bitmap) -> Unit, onGallery: () -> Unit, onError: (String) -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
@@ -48,20 +48,20 @@ fun CameraScreen(onPhoto: (Bitmap) -> Unit, onGallery: () -> Unit, onError: (Str
         if (permission) runCatching { controller.bindToLifecycle(owner) }.onFailure { onError("카메라를 열 수 없어요. 갤러리에서 사진을 선택해주세요.") }
         onDispose { controller.unbind() }
     }
-    // 둥근 카메라 영역 안에 미리보기와 촬영 버튼을 겹쳐 배치합니다.
+    // 둥근 카메라 영역 안에 미리보기와 촬영 버튼을 겹쳐 배치
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(30.dp)).background(Color(0xFF161616)).border(2.dp, Lime, RoundedCornerShape(30.dp))) {
-        // 카메라 권한이 있으면 Android 미리보기 뷰를 Compose 화면에 표시합니다.
+        // 카메라 권한이 있으면 Android 미리보기 뷰를 Compose 화면에 표시
         if (permission) AndroidView(factory = { PreviewView(it).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             this.controller = controller
         } }, modifier = Modifier.fillMaxSize())
-        // 권한이 없으면 안내 문구, 권한 요청, 갤러리 선택 버튼을 중앙에 세로로 배치합니다.
+        // 권한이 없으면 안내 문구, 권한 요청, 갤러리 선택 버튼을 중앙에 세로로 배치
         else Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("일상의 순간을 담아보세요", color = Lime)
             TextButton(onClick = { request.launch(Manifest.permission.CAMERA) }) { Text("카메라 권한 허용") }
             TextButton(onClick = onGallery) { Text("갤러리에서 선택") }
         }
-        // 미리보기 하단에 갤러리, 촬영, 전후면 전환 버튼을 가로로 배치합니다.
+        // 미리보기 하단에 갤러리, 촬영, 전후면 전환 버튼을 가로로 배치
         Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             RoundButton("▧", "갤러리", 48, onClick = onGallery)
             RoundButton(if (taking) "…" else "●", "촬영", 76, true) {

@@ -17,9 +17,9 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
 
 @Composable
-// 기기 글꼴에 관계없이 일정한 모양의 아이콘을 선과 도형으로 그립니다.
+// 기기 글꼴에 관계없이 일정한 모양의 아이콘을 선과 도형으로 그리기
 fun SnapIcon(symbol: String, color: Color, size: Int = 26) {
-    // 지정된 크기의 그리기 영역에 선과 도형으로 아이콘을 직접 그립니다.
+    // 지정된 크기의 그리기 영역에 선과 도형으로 아이콘을 직접 그리기
     Canvas(Modifier.size(size.dp)) {
         scale(this.size.width / 24f, this.size.height / 24f, pivot = Offset.Zero) {
             val stroke = Stroke(2f, cap = StrokeCap.Round)

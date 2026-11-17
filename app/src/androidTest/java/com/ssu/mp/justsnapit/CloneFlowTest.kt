@@ -10,9 +10,12 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -62,8 +65,19 @@ class CloneFlowTest {
             compose.waitForIdle()
             compose.onNodeWithContentDescription(added.title).performClick()
             compose.onNodeWithText("닫기").assertExists()
+            compose.onNodeWithText("메모", useUnmergedTree = true).performClick()
+            compose.onNode(hasSetTextAction()).performTextInput("저장 확인 메모")
+            compose.onNodeWithText("저장", useUnmergedTree = true).performClick()
+            compose.waitUntil(10_000) {
+                compose.onAllNodesWithText("저장 확인 메모").fetchSemanticsNodes().isNotEmpty() &&
+                    compose.onAllNodesWithText("스티커 메모").fetchSemanticsNodes().isEmpty()
+            }
+            assertEquals("저장 확인 메모", store.load().first { it.id == added.id }.memo)
+            compose.onNodeWithText("닫기").performClick()
+            compose.onNodeWithContentDescription(added.title).performClick()
+            compose.onNodeWithText("저장 확인 메모").assertExists()
             capture("detail.png")
-        } finally { store.delete(added, store.load()) }
+        } finally { store.delete(added) }
         assertFalse(store.load().any { it.id == added.id })
     }
 

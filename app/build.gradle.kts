@@ -1,7 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.3.9"
 }
+
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 
 android {
     namespace = "com.ssu.mp.justsnapit"
@@ -36,6 +39,9 @@ android {
 }
 
 dependencies {
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
     implementation("androidx.camera:camera-camera2:1.5.3")
     implementation("androidx.camera:camera-lifecycle:1.5.3")
     implementation("androidx.camera:camera-view:1.5.3")
