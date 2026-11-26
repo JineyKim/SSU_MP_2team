@@ -26,6 +26,11 @@ fun SnapIcon(symbol: String, color: Color, size: Int = 26) {
             fun line(x: Float, y: Float, x2: Float, y2: Float) = drawLine(color, Offset(x,y), Offset(x2,y2), 2f, StrokeCap.Round)
             when (symbol) {
                 "+" -> { line(12f,4f,12f,20f); line(4f,12f,20f,12f) }
+                "▤" -> {
+                    drawRoundRect(color, Offset(3f, 4f), Size(18f, 16f), CornerRadius(2.5f), style = stroke)
+                    line(3f, 10f, 21f, 10f)
+                    line(10f, 10f, 10f, 20f)
+                }
                 "•••" -> for (x in listOf(5f,12f,19f)) drawCircle(color,1.6f,Offset(x,12f))
                 "⊞", "◉" -> for (x in listOf(3f,14f)) for (y in listOf(3f,14f))
                     drawRoundRect(color,Offset(x,y),Size(7f,7f),CornerRadius(1.5f),style=stroke)

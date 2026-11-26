@@ -1,5 +1,7 @@
 package com.ssu.mp.justsnapit
 
+import com.ssu.mp.justsnapit.data.Board
+import com.ssu.mp.justsnapit.data.HOME_BOARD_ID
 import com.ssu.mp.justsnapit.data.Sticker
 import com.ssu.mp.justsnapit.data.StickerStore
 import com.ssu.mp.justsnapit.data.cutOut
@@ -23,6 +25,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.ssu.mp.justsnapit.ui.board.BoardManager
 import com.ssu.mp.justsnapit.ui.camera.CameraScreen
 import com.ssu.mp.justsnapit.ui.collection.CollectionScreen
 import com.ssu.mp.justsnapit.ui.collection.StickerDetail
@@ -34,12 +37,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
-// 앱 상태를 관리하고 카메라, 수집함, 편집 및 상세 화면을 표시
+// 앱 상태를 관리하고 카메라, 보드, 편집, 보드 관리 및 상세 화면을 표시
 fun SnapApp() {
     val context = LocalContext.current
     val store = remember { StickerStore(context) }
     val scope = rememberCoroutineScope()
+    var boards by remember { mutableStateOf(emptyList<Board>()) }
+    var activeBoardId by rememberSaveable { mutableStateOf(HOME_BOARD_ID) }
     var stickers by remember { mutableStateOf(emptyList<Sticker>()) }
+    var managingBoards by rememberSaveable { mutableStateOf(false) }
     var camera by rememberSaveable { mutableStateOf(false) }
     var grid by rememberSaveable { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Sticker?>(null) }
@@ -49,8 +55,18 @@ fun SnapApp() {
     var error by remember { mutableStateOf<String?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
+    val currentBoard = remember(boards, activeBoardId) {
+        boards.firstOrNull { it.id == activeBoardId } ?: boards.firstOrNull()
+    }
+
     LaunchedEffect(Unit) {
-        runCatching { store.load() }.onSuccess { stickers = it }.onFailure { error = "수집함을 읽지 못했어요." }
+        runCatching { store.loadWorkspace() }
+            .onSuccess { snapshot ->
+                boards = snapshot.boards
+                activeBoardId = snapshot.activeBoardId
+                stickers = snapshot.stickers
+            }
+            .onFailure { error = "보드를 읽지 못했어요." }
         loaded = true
     }
     // 사진의 배경을 제거하고 결과를 편집 화면에 전달
@@ -74,14 +90,46 @@ fun SnapApp() {
     // 처리 중이 아닐 때 시스템 사진 선택 화면 열기
     fun pick() { if (!busy) picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
 
-    BackHandler(selected != null || editing != null || camera || grid) {
-        when { selected != null -> selected = null; editing != null -> { editing = null; original = null }
-            grid -> grid = false; else -> camera = false }
+    // 선택한 보드로 전환하고 해당 보드의 스티커 목록 복원
+    fun switchBoard(board: Board) {
+        if (board.id == activeBoardId) {
+            managingBoards = false
+            return
+        }
+        scope.launch {
+            busy = true
+            try {
+                stickers = store.openBoard(board.id)
+                activeBoardId = board.id
+                selected = null
+                managingBoards = false
+            } catch (e: Exception) {
+                error = "보드를 열지 못했어요."
+            } finally {
+                busy = false
+            }
+        }
     }
-    // 전체 화면의 검정 배경과 연두색 테두리를 그리고, 상세 화면과 로딩 화면을 위에 겹쳐 표시
+
+    BackHandler(selected != null || managingBoards || editing != null || camera || grid) {
+        when {
+            selected != null -> selected = null
+            managingBoards -> managingBoards = false
+            editing != null -> { editing = null; original = null }
+            grid -> grid = false
+            else -> camera = false
+        }
+    }
+    // 전체 화면의 검정 배경과 연두색 테두리를 그리고, 상세·보드 관리·로딩 화면을 위에 겹쳐 표시
     Box(Modifier.fillMaxSize().background(Color.Black).border(3.dp, Lime, RoundedCornerShape(48.dp))) {
-        // 상단 메뉴, 본문, 하단 전환 버튼을 세로로 배치하고 상세 보기가 열리면 배경 흐림 처리
-        Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).then(if (selected != null) Modifier.blur(20.dp) else Modifier)) {
+        // 상단 메뉴, 본문, 하단 전환 버튼을 세로로 배치하고 덮개 화면이 열리면 배경 흐림 처리
+        Column(
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .padding(16.dp)
+                .then(if (selected != null || managingBoards) Modifier.blur(20.dp) else Modifier)
+        ) {
             if (editing == null) {
                 // 하단 전환 버튼 위의 남은 공간에 현재 선택한 화면을 표시
                 Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -89,9 +137,11 @@ fun SnapApp() {
                         CameraScreen(onPhoto = ::process, onGallery = ::pick, onError = { error = it })
                     } else {
                         CollectionScreen(
+                            board = currentBoard,
                             stickers = stickers,
                             grid = grid,
                             loaded = loaded,
+                            onManageBoards = { managingBoards = true },
                             onAdd = ::pick,
                             onToggleGrid = { grid = !grid },
                             onSelect = { selected = it },
@@ -112,13 +162,38 @@ fun SnapApp() {
                             busy = true
                             try {
                                 val image = withContext(Dispatchers.Default) { outlined(requireNotNull(editing)) }
-                                val sticker = store.add(image, stickers)
+                                val sticker = store.add(image, stickers, activeBoardId)
                                 stickers = stickers + sticker; editing = null; original = null; camera = false; grid = false
                             } catch (e: Exception) { error = e.message ?: "저장하지 못했어요." }
                             finally { busy = false }
                         }
                     })
             }
+        }
+        if (managingBoards) {
+            BoardManager(
+                boards = boards,
+                activeBoardId = activeBoardId,
+                onSelect = ::switchBoard,
+                onCreate = { name ->
+                    val (updatedBoards, created) = store.createBoard(name)
+                    boards = updatedBoards
+                    activeBoardId = created.id
+                    stickers = emptyList()
+                    selected = null
+                },
+                onRename = { board, name ->
+                    boards = store.renameBoard(board.id, name)
+                },
+                onDelete = { board ->
+                    val snapshot = store.deleteBoard(board.id, activeBoardId)
+                    boards = snapshot.boards
+                    activeBoardId = snapshot.activeBoardId
+                    stickers = snapshot.stickers
+                    selected = null
+                },
+                onClose = { managingBoards = false }
+            )
         }
         selected?.let { item ->
             StickerDetail(
