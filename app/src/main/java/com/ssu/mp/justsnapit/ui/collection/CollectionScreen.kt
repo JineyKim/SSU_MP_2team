@@ -17,38 +17,44 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.ssu.mp.justsnapit.data.Board
 import com.ssu.mp.justsnapit.data.Sticker
 import com.ssu.mp.justsnapit.ui.components.RoundButton
 
 @Composable
-// 수집함 메뉴와 스티커 목록을 표시하고 보기 전환 및 선택 동작을 전달
+// 현재 보드 정보, 상단 관리 버튼 및 스티커 목록을 표시
 internal fun CollectionScreen(
+    board: Board?,
     stickers: List<Sticker>,
     grid: Boolean,
     loaded: Boolean,
+    onManageBoards: () -> Unit,
     onAdd: () -> Unit,
     onToggleGrid: () -> Unit,
     onSelect: (Sticker) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var menu by remember { mutableStateOf(false) }
-    // 상단 메뉴와 수집 영역을 세로로 배치
+    // 상단 메뉴와 보드 스티커 영역을 세로로 배치
     Column(modifier) {
-        // 수집함 상단에 앱 이름과 더보기·보기 전환·추가 버튼을 가로로 배치
+        // 상단에 앱 이름·현재 보드 이름과 보드 관리·보기 전환·추가 버튼을 가로로 배치
         Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // 앱 이름을 두 줄로 표시하고 버튼을 제외한 가로 공간을 차지
-            Column(Modifier.weight(1f)) {
+            // 앱 이름과 현재 보드 이름을 세로로 표시하고 버튼을 제외한 가로 공간을 차지
+            Column(Modifier.weight(1f).clickable { onManageBoards() }) {
                 Text("Just", color = Lime, fontSize = 25.sp, fontWeight = FontWeight.Black)
                 Text("Snap It!", color = Lime, fontSize = 29.sp, fontWeight = FontWeight.Black)
-            }
-            // 더보기 버튼을 기준으로 펼침 메뉴가 나타날 위치 설정
-            Box {
-                RoundButton("•••", "더보기", onClick = { menu = true })
-                DropdownMenu(menu, { menu = false }) {
-                    DropdownMenuItem(text = { Text("사진에서 추가") }, onClick = { menu = false; onAdd() })
-                    DropdownMenuItem(text = { Text("Just Snap It · ${stickers.size}개의 스티커") }, onClick = { menu = false })
+                board?.let {
+                    Text(
+                        it.name,
+                        color = Color.LightGray,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
+            RoundButton("▤", "보드 관리", onClick = onManageBoards)
             // 상단 원형 버튼 사이의 간격을 확보
             Spacer(Modifier.width(7.dp))
             RoundButton(if (grid) "◉" else "⊞", "보기 전환", onClick = { onToggleGrid() })
@@ -56,7 +62,7 @@ internal fun CollectionScreen(
             Spacer(Modifier.width(7.dp))
             RoundButton("+", "사진 추가", onClick = { onAdd() })
         }
-        // 상단과 하단 메뉴 사이의 남은 공간에 본문을 표시하고 빈 수집함 안내를 겹쳐 표시
+        // 상단과 하단 메뉴 사이의 남은 공간에 본문을 표시하고 빈 보드 안내를 겹쳐 표시
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 // 스티커를 한 줄에 세 개씩 배치하고 세로로 스크롤 지원
@@ -66,9 +72,9 @@ internal fun CollectionScreen(
                             .clip(RoundedCornerShape(20.dp)).background(Charcoal).clickable { onSelect(item) }.padding(8.dp))
                     }
                 }
-                else -> StickerJar(stickers, onSelect)
+                else -> key(board?.id) { StickerJar(stickers, onSelect) }
             }
-            // 수집함이 비어 있으면 안내 문구와 첫 스티커 추가 버튼을 중앙에 세로로 배치
+            // 보드가 비어 있으면 안내 문구와 첫 스티커 추가 버튼을 중앙에 세로로 배치
             if (stickers.isEmpty() && loaded) Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Your little collection", color = Lime, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                 // 제목과 설명 사이에 세로 여백 추가
